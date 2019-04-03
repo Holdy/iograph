@@ -29,7 +29,10 @@ function hitTest() {
     return modelUnderCursor;
 }
 
-var debug = document.location.toString().lastIndexOf('debug') != -1;
+var debug = isFlagged('debug');
+var marching = debug || isFlagged('marching');
+
+function isFlagged(flag) { return document.location.toString().lastIndexOf(flag) != -1 };
 
 var voo = {
     nodes: {}
@@ -78,7 +81,7 @@ function drawFrame(timestamp) {
     ctx.clearRect(0, 0, canvasWidth, canvasHeight);
 
     frameCount++;
-    //ctx.lineDashOffset = timestamp / -190;
+    if (marching) ctx.lineDashOffset = timestamp / -190;
 
     forEachColumn(function (col) { drawColumn(ctx, col) });
 
@@ -254,8 +257,6 @@ function drawColumn(ctx, column) {
     if (column.next) {
         var leftAttachX = column.x + columnTemplate.width - half;
         var rightAttachX = column.next.x;
-        ctx.lineWidth = 4;
-        ctx.setLineDash([1, 8]);
         Object.keys(column.map).forEach(function (key) {
             const widget = column.map[key];
 
@@ -266,6 +267,17 @@ function drawColumn(ctx, column) {
                     ctx.strokeStyle = link.style;
                     ctx.moveTo(leftAttachX, widget.y + half);
                     ctx.lineTo(rightAttachX, rightWidget.y + half);
+                    ctx.lineWidth = 4;
+                    ctx.setLineDash([1, 8]);
+                    ctx.stroke();
+                    ctx.lineWidth = 3;
+                    ctx.setLineDash([2, 7]);
+                    ctx.stroke();
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([3, 6]);
+                    ctx.stroke();
+                    ctx.lineWidth = 1;
+                    ctx.setLineDash([4, 5]);
                     ctx.stroke();
                 });
             }
