@@ -1,16 +1,14 @@
 ﻿/* Roadmap
- * Square corners for 'permanent nodes' (E.g. those that are not created by anything).
- * Border colour for processing units (E.g. those that read/write something)
  * Logical horizontal grouping of widgets in columns to try and avoid i/o lines crossing.
  */
 
-var cols = 3;
+var cols = 10;
 var frameCount = 0;
 var element, detailsDiv;
 var canvasWidth, canvasHeight;
-var columnTemplate = {widgetGap: 8, widgetHeight:30};
+var columnTemplate = { widgetGap: 8, widgetHeight: 30 };
 var firstColumn;
-var styles = { read: '#39D', write: '#5D5'};
+var styles = { read: '#39D', write: '#5D5' };
 const loadTime = Date.now();
 const cursor = {};
 const INPUTS = ["i", "inputs", "input", "consumes", "reads", "loads"];
@@ -47,7 +45,7 @@ function calculateColumns() {
     var colLoop = 0;
     var targetColumn = null;
     while (colLoop++ != cols) {
-        targetColumn = { map: {}, next: targetColumn};
+        targetColumn = { map: {}, next: targetColumn };
     }
     firstColumn = targetColumn;
     targetColumn.x = (columnGap / 2);
@@ -64,7 +62,7 @@ function calculateColumns() {
 function resizeCanvas(canvas) {
     var displayWidth = canvas.clientWidth;
     var displayHeight = canvas.clientHeight;
-    
+
     // Check if the canvas is not the same size.
     if (canvas.width != displayWidth || canvas.height != displayHeight) {
         canvas.width = displayWidth;
@@ -81,7 +79,7 @@ function drawFrame(timestamp) {
 
     frameCount++;
     //ctx.lineDashOffset = timestamp / -190;
-   
+
     forEachColumn(function (col) { drawColumn(ctx, col) });
 
     window.requestAnimationFrame(drawFrame);
@@ -117,12 +115,12 @@ function showDetails(modelId) {
         } else {
             html += modelId + '</BR>';
 
-            var details = '' ;
-            details += prepareLink('View in Live',  model['view.live']);
-            details += prepareLink('View in Test',  model['view.test']);
-            details += prepareLink('Source Code',   model.source || model.src);
+            var details = '';
+            details += prepareLink('View in Live', model['view.live']);
+            details += prepareLink('View in Test', model['view.test']);
+            details += prepareLink('Source Code', model.source || model.src);
             details += prepareLink('Documentation', model.documentation || model.doc || model.docs);
-            html += details ? ('<BR/>'+details) : ('<H2>'+roundRobin(['🤷🏼‍♂', '🙇🏼‍♀️', '🙅🏼‍♂️','🤦🏼‍♀️'])+'</H2>');
+            html += details ? ('<BR/>' + details) : ('<H2>' + roundRobin(['🤷🏼‍♂', '🙇🏼‍♀️', '🙅🏼‍♂️', '🤦🏼‍♀️']) + '</H2>');
         }
         detailsDiv.innerHTML = html;
     }
@@ -212,7 +210,7 @@ function linkWidgets(left, right, style) {
 }
 
 function eachItem(model, keyList, callback) {
-    keyList.forEach(function(key) { eachItemImpl(model[key], callback)});
+    keyList.forEach(function (key) { eachItemImpl(model[key], callback) });
 }
 
 function eachItemImpl(item, callback) {
@@ -261,7 +259,7 @@ function drawColumn(ctx, column) {
         Object.keys(column.map).forEach(function (key) {
             const widget = column.map[key];
 
-            if (widget.links) { 
+            if (widget.links) {
                 widget.links.forEach(function (link) {
                     const rightWidget = link.target;
                     ctx.beginPath();
@@ -276,23 +274,28 @@ function drawColumn(ctx, column) {
 
     }
 
-    ctx.beginPath();
-    Object.keys(column.map).forEach(function (key) {
-        const widget = column.map[key];
-        ctx.moveTo(column.x + half, widget.y + half);
-        ctx.lineTo((column.x + column.width) - half, widget.y + half);
-    });
-    ctx.lineCap = 'round';
+    for (var created = 0; created <= 1; created++) {
+        ctx.beginPath();
+        Object.keys(column.map).forEach(function (key) {
+            const widget = column.map[key];
+            if ((created && widget.model.created) || (!created && !widget.model.created)) {
+                ctx.moveTo(column.x + half, widget.y + half);
+                ctx.lineTo((column.x + column.width) - half, widget.y + half);
+            }
+        });
 
-    ctx.lineWidth = thickness + 3;
-    ctx.strokeStyle = 'white';
-    ctx.stroke();
-    ctx.lineWidth = thickness;
-    ctx.strokeStyle = 'gray';
-    ctx.stroke();
-    ctx.lineWidth = thickness - 6;
-    ctx.strokeStyle = 'white';
-    ctx.stroke();
+        ctx.lineCap = created ? 'round' : 'square';
+
+        ctx.lineWidth = thickness + 3;
+        ctx.strokeStyle = 'white';
+        ctx.stroke();
+        ctx.lineWidth = thickness;
+        ctx.strokeStyle = 'gray';
+        ctx.stroke();
+        ctx.lineWidth = thickness - 6;
+        ctx.strokeStyle = created ? 'white' : '#FBFBFB';
+        ctx.stroke();
+    }
 
     ctx.fillStyle = "black";
     const baselineDelta = half + (half * 0.25);
@@ -305,6 +308,7 @@ function drawColumn(ctx, column) {
             ctx.moveTo(column.x + half, widget.y + half);
             ctx.lineTo((column.x + column.width) - half, widget.y + half);
             ctx.lineWidth = thickness - 6;
+            ctx.lineCap = widget.model.created ? 'round' : 'square';
             ctx.strokeStyle = 'yellow';
             ctx.stroke();
         }
@@ -316,19 +320,19 @@ function drawColumn(ctx, column) {
         if (widget.icon) {
             ctx.font = "16px Arial";
             ctx.textAlign = 'center';
-            ctx.fillText(widget.icon, column.x +2, widget.y + baselineDelta + 1)
+            ctx.fillText(widget.icon, column.x + 2, widget.y + baselineDelta + 1)
         }
         if (debug) {
             ctx.lineWidth = 1;
             ctx.strokeStyle = 'red';
             ctx.strokeRect(column.x, widget.y, columnTemplate.width, columnTemplate.widgetHeight);
-        } 
+        }
     });
 }
 
 element = document.getElementById('voo');
 if (element) {
-    canvasWidth  = element.clientWidth;
+    canvasWidth = element.clientWidth;
     canvasHeight = element.clientHeight;
     window.requestAnimationFrame(drawFrame);
     calculateColumns();
@@ -347,17 +351,24 @@ function Get(uri) {
     return request.responseText;
 }
 
-voo.load = function(uri) {
+voo.load = function (uri) {
     var map = JSON.parse(Get(uri));
     voo.addMap(map.graph);
 }
 
-voo.addMap = function(map) {
+voo.addMap = function (map) {
     Object.keys(map).forEach(function (key) {
         if (!voo.firstKey) voo.firstKey = key;
         const item = map[key];
         item.id = key;
         addItem(item);
+    });
+
+    Object.values(map).forEach(function (item) {
+        eachItem(item, OUTPUTS, function (outputId) {
+            var outputtedThing = getOrCreate(outputId);
+            outputtedThing.created = true;
+        });
     });
 
     populateColumns();
@@ -373,6 +384,7 @@ function getOrCreate(id) {
 }
 
 function addItem(item) {
+    //Could just call getOrCreate() and set the defined flag.
     if (!voo.nodes[item.id]) {
         voo.nodes[item.id] = item;
         item.definitionCount = 1;
@@ -402,19 +414,19 @@ function roundRobin(choices) {
 }
 
 var icons = {
-    'schedule':  '🕑',
-    'key':       '🔑',
-    'file':      '📄',
-    'metric':    '📊',
-    'log':       '📋',
-    'queue':     '➡️',
-    'lambda':    '🐑',
+    'schedule': '🕑',
+    'key': '🔑',
+    'file': '📄',
+    'metric': '📊',
+    'log': '📋',
+    'queue': '➡️',
+    'lambda': '🐑',
     'processor': '⚙️',
-    'service':   '⚙️',
-    'query':     '📰',
-    'report':    '📰',
-    '.js':       '📜',
-    'message':   '💬',
-    'cookie':    '🍪',
-    'document':  '📑'
+    'service': '⚙️',
+    'query': '📰',
+    'report': '📰',
+    '.js': '📜',
+    'message': '💬',
+    'cookie': '🍪',
+    'document': '📑'
 };
