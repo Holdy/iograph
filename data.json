@@ -1,0 +1,5 @@
+{ "graph": {
+    "data.json" : {},
+    "voo.js"    : { "reads": "data.json", "creates": "This funky graph!" },
+    "index.html": { "reads": "voo.js" }
+}}

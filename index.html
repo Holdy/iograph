@@ -1,0 +1,33 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Overview</title>
+    <style>
+        * {margin: 0; padding:0}
+        body, html { height:100% }
+        canvas {
+            position: absolute;
+            width:    100%;
+            height:   100%;
+        }
+        #voo_details {
+            position:   absolute;
+            height:     3em;
+            bottom:     0;
+            padding:    5px;
+            border-top: 2px solid grey;
+            width:      100%;
+            text-align: center
+        }
+    </style>
+</head>
+<body>
+    <canvas style="border:1px solid black;" id="voo"></canvas><br />
+    <div id="voo_details"></div>
+    <script src="./voo.js"></script>
+    <script>
+        voo.load('./data.json');
+    </script>
+</body>
+</html>
