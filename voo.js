@@ -411,8 +411,8 @@ function determineIcon(text1, text2) {
     var result = null;
     var latestIndex = 0;
     Object.keys(icons).forEach(function (key) {
-        var foundIndex = search.indexOf(key);
-        if (foundIndex > latestIndex) {
+        var foundIndex = search.indexOf(key) + key.length;
+        if (foundIndex >= latestIndex) {
             latestIndex = foundIndex;
             result = icons[key];
         }
@@ -440,5 +440,17 @@ var icons = {
     '.js': '📜',
     'message': '💬',
     'cookie': '🍪',
-    'document': '📑'
+    'document': '📑',
+    'graph': '❄️',
+    'map': '🌍',
+    'satellite': '🛸',
+    'html': '📄',
+    'signal': '⚡️',
+    'hardwear': '🤖',
+    'notification': '🛎',
+    'alert': '🚨',
+    'prediction': '🔮',
+    'history': '👣',
+    'settings file': '📝',
+    'config file': '📝'
 };
