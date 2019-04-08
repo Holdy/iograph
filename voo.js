@@ -1,25 +1,21 @@
-﻿/* Roadmap
- * Logical horizontal grouping of widgets in columns to try and avoid i/o lines crossing.
- */
-
-var cols = 10;
+﻿var cols = 8;
 var frameCount = 0;
-var element, detailsDiv;
+var canvasElement, detailsDiv;
 var canvasWidth, canvasHeight;
-var columnTemplate = { widgetGap: 8, widgetHeight: 30 };
 var firstColumn;
-var styles = { read: '#39D', write: '#5D5' };
+const columnTemplate = { widgetGap: 8, widgetHeight: 30 };
+const styles = { read: '#39D', write: '#5D5' };
 const loadTime = Date.now();
 const cursor = {};
 const INPUTS = ["i", "inputs", "input", "consumes", "reads", "loads"];
 const OUTPUTS = ["o", "outputs", "output", "produces", "creates", "writes", "updates", "saves"];
+const iograph = { nodes: {} };
 
 function hitTest() {
     var modelUnderCursor = null;
     forEachColumn(function (column) {
         if (cursor.x > column.x && cursor.x < (column.x + columnTemplate.width)) {
-            Object.keys(column.map).forEach(function (key) {
-                const widget = column.map[key];
+            column.widgetList.forEach(function (widget) {
                 if (cursor.y >= widget.y && cursor.y <= widget.bottom) {
                     modelUnderCursor = widget.model;
                 }
@@ -34,13 +30,9 @@ var marching = debug || isFlagged('marching');
 
 function isFlagged(flag) { return document.location.toString().lastIndexOf(flag) != -1 };
 
-var voo = {
-    nodes: {}
-};
-
 function calculateColumns() {
-    var w = element.clientWidth;
-    var h = element.clientHeight;
+    var w = canvasElement.clientWidth;
+    var h = canvasElement.clientHeight;
     var columnGap = 35;
     var availableWidth = w - (cols * columnGap);
     columnTemplate.width = availableWidth / cols;
@@ -48,7 +40,7 @@ function calculateColumns() {
     var colLoop = 0;
     var targetColumn = null;
     while (colLoop++ != cols) {
-        targetColumn = { map: {}, next: targetColumn };
+        targetColumn = { widgetList: [], next: targetColumn };
     }
     firstColumn = targetColumn;
     targetColumn.x = (columnGap / 2);
@@ -73,10 +65,9 @@ function resizeCanvas(canvas) {
     }
 }
 
-
 function drawFrame(timestamp) {
-    resizeCanvas(element);
-    const ctx = element.getContext("2d");
+    resizeCanvas(canvasElement);
+    const ctx = canvasElement.getContext("2d");
 
     ctx.clearRect(0, 0, canvasWidth, canvasHeight);
 
@@ -97,7 +88,7 @@ function drawFrame(timestamp) {
 }
 
 function populateColumns() {
-    var root = voo.nodes[voo.firstKey];
+    var root = iograph.nodes[iograph.firstKey];
     if (!root) root = { id: "No root (no items defined?)." };
     addModelToColumn(root, firstColumn);
     showDetails(root.id);
@@ -110,7 +101,7 @@ function showDetails(modelId) {
         // All of this should be done with OO based DOM manipulation.
         var html = '';
 
-        var model = voo.nodes[modelId];
+        var model = iograph.nodes[modelId];
         if (!modelId) {
             html = '';
         } else if (!model) {
@@ -139,15 +130,13 @@ function prepareLink(title, url, target) {
 }
 
 function packColumn(column) {
-    var keys = Object.keys(column.map);
-    var widgetCount = keys.length;
+    var widgetCount = column.widgetList.length;
     var totalWidgetHeight = widgetCount * columnTemplate.widgetHeight;
     var totalSpacing = (widgetCount - 1) * columnTemplate.widgetGap;
     var totalHeight = totalWidgetHeight + totalSpacing;
     var columnYCenter = columnTemplate.height / 2;
     var y = columnYCenter - (totalHeight / 2);
-    keys.forEach(function (key) {
-        var widget = column.map[key];
+    column.widgetList.forEach(function (widget) {
         widget.y = Math.floor(y);
         widget.bottom = widget.y + columnTemplate.widgetHeight;
         y += columnTemplate.widgetHeight + columnTemplate.widgetGap;
@@ -157,13 +146,18 @@ function packColumn(column) {
 function addModelToColumn(model, column) {
     var widget = null;
     if (column && model) {
-        widget = column.map[model.id];
+
+        column.widgetList.forEach(function (testWidget) {
+            if (testWidget.model.id == model.id) {
+                widget = testWidget;
+            }
+        });
         if (!widget) {
             widget = { model: model };
-            widget.label = model.id.replace(/[-_]/g, ' ');
+            widget.label = model.label || model.id.replace(/[-_]/g, ' ');
             widget.icon = determineIcon(widget.label);
-            column.map[model.id] = widget;
-
+            column.widgetList.push(widget); // Temporary add is the recursive calls dont add it again.
+            
             if (column.next) { // We can add outputs.
                 eachItem(model, OUTPUTS, function (creationId) {
                     addModelToColumn(getOrCreate(creationId), column.next, styles.write);
@@ -175,12 +169,17 @@ function addModelToColumn(model, column) {
                     linkWidgets(inputWidget, widget, styles.read);
                 });
             }
+
+            column.widgetList.splice(column.widgetList.indexOf(widget), 1); // Remove from temp-position and place correctly.
+            var insertIndex = determineInsertIndex(column.previous, column, column.next, widget);
+            column.widgetList.push(widget);
+//            column.widgetList.splice(insertIndex, 0, widget);
         }
         // If there are items that create the model being added and there's a column to the left,
         // we can add the things.
         if (column.previous) {
-            Object.keys(voo.nodes).forEach(function (key) {
-                var node = voo.nodes[key];
+            Object.keys(iograph.nodes).forEach(function (key) {
+                var node = iograph.nodes[key];
                 eachItem(node, OUTPUTS, function (createdId) {
                     if (createdId == model.id) {
                         var leftWidget = addModelToColumn(node, column.previous);
@@ -191,8 +190,8 @@ function addModelToColumn(model, column) {
         }
 
         if (column.next) {
-            Object.keys(voo.nodes).forEach(function (key) {
-                var node = voo.nodes[key];
+            Object.keys(iograph.nodes).forEach(function (key) {
+                var node = iograph.nodes[key];
                 eachItem(node, INPUTS, function (id) {
                     if (id == model.id) {
                         var rightWidget = addModelToColumn(node, column.next);
@@ -200,7 +199,6 @@ function addModelToColumn(model, column) {
                     }
                 });
             });
-
         }
     }
     return widget;
@@ -257,8 +255,7 @@ function drawColumn(ctx, column) {
     if (column.next) {
         var leftAttachX = column.x + columnTemplate.width - half;
         var rightAttachX = column.next.x;
-        Object.keys(column.map).forEach(function (key) {
-            const widget = column.map[key];
+        column.widgetList.forEach(function (widget) {
 
             if (widget.links) {
                 widget.links.forEach(function (link) {
@@ -288,8 +285,7 @@ function drawColumn(ctx, column) {
 
     for (var created = 0; created <= 1; created++) {
         ctx.beginPath();
-        Object.keys(column.map).forEach(function (key) {
-            const widget = column.map[key];
+        column.widgetList.forEach(function (widget) {
             if ((created && widget.model.created) || (!created && !widget.model.created)) {
                 ctx.moveTo(column.x + half, widget.y + half);
                 ctx.lineTo((column.x + column.width) - half, widget.y + half);
@@ -312,8 +308,7 @@ function drawColumn(ctx, column) {
     ctx.fillStyle = "black";
     const baselineDelta = half + (half * 0.25);
     const maxTextWidth = columnTemplate.width - (thickness * 0.75);
-    Object.keys(column.map).forEach(function (key) {
-        const widget = column.map[key];
+    column.widgetList.forEach(function (widget) {
 
         if (cursor.model == widget.model) {
             ctx.beginPath();
@@ -342,19 +337,19 @@ function drawColumn(ctx, column) {
     });
 }
 
-element = document.getElementById('voo');
-if (element) {
-    canvasWidth = element.clientWidth;
-    canvasHeight = element.clientHeight;
+canvasElement = document.getElementById('iograph_canvas');
+if (canvasElement) {
+    canvasWidth = canvasElement.clientWidth;
+    canvasHeight = canvasElement.clientHeight;
     window.requestAnimationFrame(drawFrame);
     calculateColumns();
-    element.onmousemove = function (e) { cursor.x = e.pageX; cursor.y = e.pageY; };
-    element.onmousedown = function (e) {
+    canvasElement.onmousemove = function (e) { cursor.x = e.pageX; cursor.y = e.pageY; };
+    canvasElement.onmousedown = function (e) {
         cursor.model = hitTest(); showDetails(cursor.model ? cursor.model.id : null);
     };
 }
 
-detailsDiv = document.getElementById('voo_details');
+detailsDiv = document.getElementById('iograph_details');
 
 function Get(uri) {
     var request = new XMLHttpRequest(); // a new request
@@ -363,14 +358,14 @@ function Get(uri) {
     return request.responseText;
 }
 
-voo.load = function (uri) {
-    var map = JSON.parse(Get(uri));
-    voo.addMap(map.graph);
+iograph.load = function (uri) {
+    var data = JSON.parse(Get(uri));
+    iograph.addMap(data.graph);
 }
 
-voo.addMap = function (map) {
+iograph.addMap = function (map) {
     Object.keys(map).forEach(function (key) {
-        if (!voo.firstKey) voo.firstKey = key;
+        if (!iograph.firstKey) iograph.firstKey = key;
         const item = map[key];
         item.id = key;
         addItem(item);
@@ -387,21 +382,30 @@ voo.addMap = function (map) {
 }
 
 function getOrCreate(id) {
-    var result = voo.nodes[id];
+    var result = iograph.nodes[id];
     if (!result) {
         result = { id: id, definitionCount: 0 };
-        voo.nodes[id] = result;
+        iograph.nodes[id] = result;
     }
     return result;
 }
 
+const emptyDummyColumn = { widgetList: [] };
+function determineInsertIndex(leftColumn = emptyDummyColumn, targetColumn, rightColumn = emptyDummyColumn, model) {
+    var index = targetColumn.widgetList.length;
+    if (index == 0) {
+        return index; // Nothing in the column, ordering is irrelevant.
+    }
+    return index;
+}
+
 function addItem(item) {
     //Could just call getOrCreate() and set the defined flag.
-    if (!voo.nodes[item.id]) {
-        voo.nodes[item.id] = item;
+    if (!iograph.nodes[item.id]) {
+        iograph.nodes[item.id] = item;
         item.definitionCount = 1;
     } else {
-        var existingItem = voo.nodes[item.id];
+        var existingItem = iograph.nodes[item.id];
         item.definitionCount++;
     }
 }
@@ -427,6 +431,7 @@ function roundRobin(choices) {
 
 var icons = {
     'schedule': '🕑',
+    'scheduling': '🕑',
     'key': '🔑',
     'file': '📄',
     'metric': '📊',

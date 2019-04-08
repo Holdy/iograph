@@ -1,0 +1,24 @@
+﻿* {
+    margin: 0;
+    padding: 0
+}
+
+body, html {
+    height: 100%
+}
+
+#iograph_canvas {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+}
+
+#iograph_details {
+    position: absolute;
+    height: 3em;
+    bottom: 0;
+    padding: 5px;
+    border-top: 2px solid grey;
+    width: 100%;
+    text-align: center
+}
