@@ -1,4 +1,4 @@
-﻿var cols = 8;
+﻿var cols = 5;
 var frameCount = 0;
 var canvasElement, detailsDiv;
 var canvasWidth, canvasHeight;
@@ -7,8 +7,8 @@ const columnTemplate = { widgetGap: 8, widgetHeight: 30 };
 const styles = { read: '#39D', write: '#5D5' };
 const loadTime = Date.now();
 const cursor = {};
-const INPUTS = ["i", "inputs", "input", "consumes", "reads", "loads"];
-const OUTPUTS = ["o", "outputs", "output", "produces", "creates", "writes", "updates", "saves"];
+const INPUTS = ["i", "inputs", "input", "consumes", "reads", "loads","receives", "loads"];
+const OUTPUTS = ["o", "outputs", "output", "produces", "creates", "writes", "sends","updates", "saves", "triggers"];
 const iograph = { nodes: {} };
 
 function hitTest() {
@@ -107,12 +107,13 @@ function showDetails(modelId) {
         } else if (!model) {
             html = 'Could not find model by Id - ' + modelId;
         } else {
-            html += modelId + '</BR>';
+            html += (model.label ||  modelId) + '</BR>';
 
             var details = '';
             details += prepareLink('View in Live', model['view.live']);
             details += prepareLink('View in Test', model['view.test']);
-            details += prepareLink('Source Code', model.source || model.src);
+            details += prepareLink('View in Dev',  model['view.dev']);
+            details += prepareLink('Source Code',  model.source || model.src);
             details += prepareLink('Documentation', model.documentation || model.doc || model.docs);
             html += details ? ('<BR/>' + details) : ('<H2>' + roundRobin(['🤷🏼‍♂', '🙇🏼‍♀️', '🙅🏼‍♂️', '🤦🏼‍♀️']) + '</H2>');
         }
@@ -415,8 +416,8 @@ function determineIcon(text1, text2) {
     var result = null;
     var latestIndex = 0;
     Object.keys(icons).forEach(function (key) {
-        var foundIndex = search.indexOf(key) + key.length;
-        if (foundIndex >= latestIndex) {
+        var foundIndex = search.indexOf(key);
+        if (foundIndex != -1 && foundIndex >= latestIndex) {
             latestIndex = foundIndex;
             result = icons[key];
         }
@@ -444,6 +445,7 @@ var icons = {
     'report': '📰',
     '.js': '📜',
     'message': '💬',
+    'table':'📋',
     'cookie': '🍪',
     'document': '📑',
     'graph': '❄️',
@@ -457,5 +459,6 @@ var icons = {
     'prediction': '🔮',
     'history': '👣',
     'settings file': '📝',
-    'config file': '📝'
+    'config file': '📝',
+    'request':'📡'
 };
