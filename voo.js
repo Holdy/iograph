@@ -107,14 +107,14 @@ function showDetails(modelId) {
         } else if (!model) {
             html = 'Could not find model by Id - ' + modelId;
         } else {
-            html += (model.label ||  modelId) + '</BR>';
+            html += (model.label ||  modelId);
 
             var details = '';
-            details += prepareLink('View in Live', model['view.live']);
-            details += prepareLink('View in Test', model['view.test']);
-            details += prepareLink('View in Dev',  model['view.dev']);
-            details += prepareLink('Source Code',  model.source || model.src);
             details += prepareLink('Documentation', model.documentation || model.doc || model.docs);
+            details += prepareLink('Source Code',  model.source || model.src);
+            details += prepareLink('View in Dev',  model['view.dev']);
+            details += prepareLink('View in Test', model['view.test']);
+            details += prepareLink('View in Live', model['view.prod']);
             html += details ? ('<BR/>' + details) : ('<H2>' + roundRobin(['🤷🏼‍♂', '🙇🏼‍♀️', '🙅🏼‍♂️', '🤦🏼‍♀️']) + '</H2>');
         }
         detailsDiv.innerHTML = html;
@@ -156,7 +156,7 @@ function addModelToColumn(model, column) {
         if (!widget) {
             widget = { model: model };
             widget.label = model.label || model.id.replace(/[-_]/g, ' ');
-            widget.icon = determineIcon(widget.label);
+            widget.icon = determineIcon(widget.label, model.id);
             column.widgetList.push(widget); // Temporary add is the recursive calls dont add it again.
             
             if (column.next) { // We can add outputs.
@@ -450,10 +450,12 @@ var icons = {
     'document': '📑',
     'graph': '❄️',
     'map': '🌍',
+    'email':'📧',
     'satellite': '🛸',
     'html': '📄',
     'signal': '⚡️',
     'hardwear': '🤖',
+    'mobile push': '📲',
     'notification': '🛎',
     'alert': '🚨',
     'prediction': '🔮',
