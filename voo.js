@@ -417,7 +417,7 @@ function determineIcon(text1, text2) {
     var latestIndex = 0;
     Object.keys(icons).forEach(function (key) {
         var foundIndex = search.indexOf(key);
-        if (foundIndex != -1 && foundIndex >= latestIndex) {
+        if (foundIndex != -1 && foundIndex <= latestIndex) {
             latestIndex = foundIndex;
             result = icons[key];
         }
@@ -437,6 +437,7 @@ var icons = {
     'file': '📄',
     'metric': '📊',
     'log': '📋',
+    'sqs':'🔤',
     'queue': '➡️',
     'lambda': '🐑',
     'processor': '⚙️',
